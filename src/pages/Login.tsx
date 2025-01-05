@@ -17,10 +17,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/firebase-config";
 import { loginApi } from "@/api/auth";
-import { User } from "@/interfaces/auth";
 
 // Updated schema to include password validation
 const FormSchema = z.object({
