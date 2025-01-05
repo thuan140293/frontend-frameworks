@@ -19,6 +19,8 @@ import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/firebase-config";
+import { loginApi } from "@/api/auth";
+import { User } from "@/interfaces/auth";
 
 // Updated schema to include password validation
 const FormSchema = z.object({
@@ -45,16 +47,18 @@ const Login: React.FC = () => {
   const handleLogin = async (data: z.infer<typeof FormSchema>) => {
     const { email, password } = data;
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      const userOmitted = (({ uid, email, displayName, photoURL }) => ({  uid, email, displayName, photoURL }))(user);
-      const accessToken = await user.getIdToken();
-      dispatch(loginAsync({ user: { ...userOmitted, accessToken } }));
-      toast({
-        title: "Login Successful!",
-        description: "Redirecting to Home...",
-      });
-      navigate("/");
+      const userCredential = await loginApi(email, password);
+      const user = userCredential;
+      if (user) {
+        const userOmitted = (({ uid, email, displayName, photoURL }) => ({ uid, email, displayName, photoURL }))(user);
+        const accessToken = await user.getIdToken();
+        dispatch(loginAsync({ user: { ...userOmitted, accessToken: accessToken ?? null } }));
+        toast({
+          title: "Login Successful!",
+          description: "Redirecting to Home...",
+        });
+        navigate("/");
+      }
     } catch (error) {
       const errorMessage = (error as any).message || "An error occurred";
       toast({ title: "Login Failed", description: errorMessage });
