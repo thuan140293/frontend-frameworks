@@ -3,10 +3,10 @@ import { Provider } from "react-redux";
 import store from "@/store";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LoginPage from "@/pages/Login";
+import HomePage from "@/pages/Home";
 
 const Login = () => <LoginPage />;
-const Dashboard = () => <h2>Dashboard</h2>;
-const Home = () => <h2>Home</h2>;
+const Home = () => <HomePage />;
 
 const App = () => {
   return (
@@ -16,9 +16,6 @@ const App = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<ProtectedRoute />}>
             <Route index element={<Home />} />
-          </Route>
-          <Route path="/dashboard" element={<ProtectedRoute />}>
-            <Route index element={<Dashboard />} />
           </Route>
         </Routes>
       </Router>

@@ -1,6 +1,6 @@
 import React from "react";
 import { useDispatch } from "react-redux";
-import { login } from "@/store/authSlice";
+import { loginAsync } from "@/store/authSlice";
 import { Input } from "@/components/ui/input";
 import {
   Form,
@@ -10,65 +10,75 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-
 import CenterAlign from "@/components/CenterAlign";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-
-import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/firebase-config";
 
 // Updated schema to include password validation
 const FormSchema = z.object({
-  username: z.string().min(2, {
-    message: "Username must be at least 2 characters.",
+  email: z.string().nonempty({
+    message: "Email is required.",
   }),
-  password: z.string().min(6, {
-    message: "Password must be at least 6 characters.",
+  password: z.string().nonempty({
+    message: "Password is required.",
   }),
 });
 
 const Login: React.FC = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
     },
   });
 
-  const handleLogin = (data: z.infer<typeof FormSchema>) => {
-    toast({
-      title: "You submitted the following values:",
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
-    dispatch(login({ token: "fake-token" }));
+  const handleLogin = async (data: z.infer<typeof FormSchema>) => {
+    const { email, password } = data;
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      const userOmitted = (({ uid, email, displayName, photoURL }) => ({  uid, email, displayName, photoURL }))(user);
+      const accessToken = await user.getIdToken();
+      dispatch(loginAsync({ user: { ...userOmitted, accessToken } }));
+      toast({
+        title: "Login Successful!",
+        description: "Redirecting to Home...",
+      });
+      navigate("/");
+    } catch (error) {
+      const errorMessage = (error as any).message || "An error occurred";
+      toast({ title: "Login Failed", description: errorMessage });
+    }
   };
 
   return (
     <CenterAlign>
       <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(handleLogin)}
-          className="w-1/3 space-y-6"
-        >
+        <form onSubmit={form.handleSubmit(handleLogin)} className="w-1/3 space-y-6">
           <h1>Login</h1>
-          {/* Username Field */}
+          {/* Email Field */}
           <FormField
             control={form.control}
-            name="username"
+            name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Username</FormLabel>
+                <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input type="text" placeholder="Enter your username" {...field} />
+                  <Input
+                    type="text"
+                    placeholder="Enter your email"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -82,7 +92,11 @@ const Login: React.FC = () => {
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <Input type="password" placeholder="Enter your password" {...field} />
+                  <Input
+                    type="password"
+                    placeholder="Enter your password"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
